@@ -28,7 +28,7 @@ module MPV
       @pid = Process.spawn("mpv", *@args)
     end
 
-    # @return [Boolean] Whether or not the current instance is running.
+    # @return [Boolean] whether or not the mpv process is running
     def running?
       begin
         !!@pid && Process.waitpid(@pid, Process::WNOHANG).nil?

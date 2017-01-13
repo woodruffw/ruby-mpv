@@ -1,7 +1,11 @@
+require "forwardable"
+
 module MPV
   # Represents a combined mpv "server" and "client" communicating over
   # JSON IPC.
   class Session
+    extend Forwardable
+
     # @return [String] the path of the socket being used for communication
     attr_reader :socket_path
 
@@ -27,5 +31,20 @@ module MPV
 
       @client = Client.new(@socket_path)
     end
+
+    # @!method running?
+    #  @return (see MPV::Server#running?)
+    #  @see MPV::Server#running?
+    def_delegators :@server, :running?
+
+    # @!method callbacks
+    #  @return (see MPV::Client#callbacks)
+    #  @see MPV::Client#callbacks
+    def_delegators :@client, :callbacks
+
+    # @!method quit!
+    #  @return (see MPV::Client#quit!)
+    #  @see MPV::Client#quit!
+    def_delegators :@client, :quit!
   end
 end
