@@ -1,6 +1,8 @@
 ruby-mpv
 ========
 
+[![Gem Version](https://badge.fury.io/rb/mpv.svg)](https://badge.fury.io/rb/mpv)
+
 A ruby library for controlling mpv processes.
 
 ### Installation
@@ -11,9 +13,10 @@ $ gem install mpv
 
 ### Example
 
-For full documentation, please see the [RubyDocs]().
+For full documentation, please see the
+[RubyDocs](http://www.rubydoc.info/gems/mpv/).
 
-```irb
+```ruby
 # this will be called every time mpv sends an event back over the socket
 def event(event)
   puts "look ma! a callback: #{event}"
