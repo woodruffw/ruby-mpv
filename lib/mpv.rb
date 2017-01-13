@@ -1,6 +1,6 @@
-require "mpv/client"
-require "mpv/server"
-require "mpv/session"
+require_relative "mpv/client"
+require_relative "mpv/server"
+require_relative "mpv/session"
 
 # The toplevel namespace for ruby-mpv.
 module MPV
