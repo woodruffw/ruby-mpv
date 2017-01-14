@@ -13,7 +13,7 @@ module MPV
     # @return [String] the path of the socket used to communicate with mpv
     attr_reader :socket_path
 
-    # @return [Array<Object>] objects whose #event method will be called
+    # @return [Array<MPV::Callback>] callback objects that will be invoked
     #  whenever mpv emits an event
     attr_accessor :callbacks
 
@@ -22,6 +22,7 @@ module MPV
       @socket_path = path
 
       @socket = UNIXSocket.new(@socket_path)
+      @alive = true
 
       @callbacks = []
 
@@ -34,12 +35,20 @@ module MPV
       @events_thread = Thread.new { dispatch_events! }
     end
 
+    # @return [Boolean] whether or not the player is currently active
+    # @note When false, most methods will cease to function.
+    def alive?
+      @alive
+    end
+
     # Sends a command to the mpv process.
     # @param args [Array] the individual command arguments to send
     # @return [Hash] mpv's response to the command
     # @example
     #  client.command "loadfile", "mymovie.mp4", "append-play"
     def command(*args)
+      return unless alive?
+
       payload = {
         "command" => args
       }
@@ -55,6 +64,8 @@ module MPV
     # @example
     #  client.set_property "pause", true
     def set_property(*args)
+      return unless alive?
+
       command "set_property", *args
     end
 
@@ -64,6 +75,8 @@ module MPV
     # @example
     #  client.get_property "pause" # => true
     def get_property(*args)
+      return unless alive?
+
       command("get_property", *args)["data"]
     end
 
@@ -71,23 +84,29 @@ module MPV
     # @return [void]
     # @note this object becomes garbage once this method is run
     def quit!
+      return unless alive?
       command "quit"
+    ensure
+      @alive = false
       @socket = nil
       File.delete(@socket_path) if File.exist?(@socket_path)
     end
 
     private
 
+    # Pumps commands from the command queue to the socket.
     def pump_commands!
       loop do
         begin
           @socket.puts(@command_queue.pop)
         rescue # the player is deactivating
+          @alive = false
           Thread.exit
         end
       end
     end
 
+    # Pumps results from the socket to the result and event queues.
     def pump_results!
       loop do
         begin
@@ -99,18 +118,20 @@ module MPV
             @result_queue << response
           end
         rescue # the player is deactivating
+          @alive = false
           Thread.exit
         end
       end
     end
 
+    # Takes events from the event queue and dispatches them to callbacks.
     def dispatch_events!
       loop do
         event = @event_queue.pop
 
         callbacks.each do |callback|
           Thread.new do
-            callback.send :event, event if callback.respond_to?(:event)
+            callback.dispatch! event
           end
         end
       end

@@ -46,5 +46,20 @@ module MPV
     #  @return (see MPV::Client#quit!)
     #  @see MPV::Client#quit!
     def_delegators :@client, :quit!
+
+    # @!method command
+    #  @return (see MPV::Client#command)
+    #  @see MPV::Client#command
+    def_delegators :@client, :command
+
+    # @!method get_property
+    #  @return (see MPV::Client#get_property)
+    #  @see MPV::Client#get_property
+    def_delegators :@client, :get_property
+
+    # @!method set_property
+    #  @return (see MPV::Client#set_property)
+    #  @see MPV::Client#set_property
+    def_delegators :@client, :set_property
   end
 end
