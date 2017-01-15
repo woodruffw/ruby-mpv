@@ -23,7 +23,7 @@ module MPV
         "--idle",
         "--no-terminal",
         "--input-ipc-server=%{path}" % { path: @socket_path },
-      ] + user_args
+      ].concat(user_args).uniq
 
       @pid = Process.spawn("mpv", *@args)
     end
