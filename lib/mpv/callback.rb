@@ -29,7 +29,6 @@ module MPV
     def dispatch!(event)
       return unless valid?
 
-      puts "dispatch #{event}"
       object.send method, event
     end
   end
