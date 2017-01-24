@@ -1,4 +1,5 @@
 module MPV
+  # Various utility methods for ruby-mpv.
   module Utils
     # Tests whether the given utility is available in the system path.
     # @param util [String] the utility to test
