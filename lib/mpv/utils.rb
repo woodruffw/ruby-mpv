@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module MPV
   # Various utility methods for ruby-mpv.
   module Utils

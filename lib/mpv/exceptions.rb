@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module MPV
   # A generic error class for ruby-mpv.
   class MPVError < RuntimeError

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "socket"
 require "json"
 require "thread"
@@ -13,7 +15,7 @@ module MPV
     # @return [String] the path of the socket used to communicate with mpv
     attr_reader :socket_path
 
-    # @return [Array<MPV::Callback>] callback objects that will be invoked
+    # @return [Array<Proc>] callback procs that will be invoked
     #  whenever mpv emits an event
     attr_accessor :callbacks
 
@@ -50,7 +52,7 @@ module MPV
       return unless alive?
 
       payload = {
-        "command" => args
+        "command" => args,
       }
 
       @command_queue << JSON.generate(payload)
@@ -84,8 +86,7 @@ module MPV
     # @return [void]
     # @note this object becomes garbage once this method is run
     def quit!
-      return unless alive?
-      command "quit"
+      command "quit" if alive?
     ensure
       @alive = false
       @socket = nil
@@ -131,7 +132,7 @@ module MPV
 
         callbacks.each do |callback|
           Thread.new do
-            callback.dispatch! event
+            callback.call event
           end
         end
       end

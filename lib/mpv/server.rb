@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "tempfile"
 
 module MPV
@@ -19,14 +21,14 @@ module MPV
 
     # @return [Boolean] whether `mpv` supports the given flag
     # @note returns false if `mpv` is not available
-    def self.has_flag?(flag)
+    def self.flag?(flag)
       return false unless available?
 
       # MPV allows flags to be suffixed with =yes or =no, but doesn't
       # include these variations in their list. They also allow a --no-
       # prefix that isn't included in the list, so we normalize these out.
       # Additionally, we need to remove trailing arguments.
-      normalized_flag = flag.sub(/^--no-/, '--').sub(/=\S*/, '')
+      normalized_flag = flag.sub(/^--no-/, "--").sub(/=\S*/, "")
 
       flags = `mpv --list-options`.split.select { |s| s.start_with?("--") }
       flags.include?(normalized_flag)
@@ -43,7 +45,7 @@ module MPV
     # @raise [MPVUnsupportedFlagError] if `mpv` does not support the given flag
     def self.ensure_flag!(flag)
       ensure_available!
-      raise MPVUnsupportedFlagError, flag unless has_flag?(flag)
+      raise MPVUnsupportedFlagError, flag unless flag?(flag)
     end
 
     # @param path [String] the path of the socket to be created
@@ -57,7 +59,7 @@ module MPV
       @args = [
         "--idle",
         "--terminal=no",
-        "--input-ipc-server=%{path}" % { path: @socket_path },
+        "--input-ipc-server=%<path>s" % { path: @socket_path },
       ].concat(user_args).uniq
 
       @args.each { |arg| self.class.ensure_flag! arg }
@@ -67,11 +69,9 @@ module MPV
 
     # @return [Boolean] whether or not the mpv process is running
     def running?
-      begin
-        !!@pid && Process.waitpid(@pid, Process::WNOHANG).nil?
-      rescue Errno::ECHILD
-        false
-      end
+      !!@pid && Process.waitpid(@pid, Process::WNOHANG).nil?
+    rescue Errno::ECHILD
+      false
     end
   end
 end
