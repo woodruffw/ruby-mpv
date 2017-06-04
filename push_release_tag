@@ -12,7 +12,7 @@ end
 
 system "git tag #{MPV::VERSION}"
 system "git push origin #{MPV::VERSION}"
-system "gem build kbsecret"
-system "gem push kbsecret-#{MPV::VERSION}.gem"
+system "gem build mpv"
+system "gem push mpv-#{MPV::VERSION}.gem"
 
-File.delete("kbsecret-#{MPV::VERSION}.gem")
+File.delete("mpv-#{MPV::VERSION}.gem")
