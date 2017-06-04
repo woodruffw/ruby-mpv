@@ -96,6 +96,7 @@ module MPV
     private
 
     # Pumps commands from the command queue to the socket.
+    # @api private
     def pump_commands!
       loop do
         begin
@@ -107,25 +108,31 @@ module MPV
       end
     end
 
-    # Pumps results from the socket to the result and event queues.
+    # Distributes results in a nonterminating loop.
+    # @api private
     def pump_results!
       loop do
-        begin
-          response = JSON.parse(@socket.readline)
-
-          if response["event"]
-            @event_queue << response["event"]
-          else
-            @result_queue << response
-          end
-        rescue # the player is deactivating
-          @alive = false
-          Thread.exit
-        end
+        distribute_results!
       end
     end
 
+    # Distributes results to the event and result queues.
+    # @api private
+    def distribute_results!
+      response = JSON.parse(@socket.readline)
+
+      if response["event"]
+        @event_queue << response["event"]
+      else
+        @result_queue << response
+      end
+    rescue
+      @alive = false
+      Thread.exit
+    end
+
     # Takes events from the event queue and dispatches them to callbacks.
+    # @api private
     def dispatch_events!
       loop do
         event = @event_queue.pop
