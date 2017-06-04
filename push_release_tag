@@ -1,0 +1,18 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require_relative "./lib/mpv"
+
+git_tags = `git tag`.split("\n")
+
+if git_tags.include?(MPV::VERSION)
+  puts "Did you forget to update MPV::VERSION?"
+  exit
+end
+
+system "git tag #{MPV::VERSION}"
+system "git push origin #{MPV::VERSION}"
+system "gem build kbsecret"
+system "gem push kbsecret-#{MPV::VERSION}.gem"
+
+File.delete("kbsecret-#{MPV::VERSION}.gem")
