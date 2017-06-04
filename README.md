@@ -23,7 +23,7 @@ def something_happened(event)
 end
 
 session = MPV::Session.new # contains both a MPV::Server and a MPV::Client
-session.callbacks << MPV::Callback.new(self, :something_happened)
+session.callbacks << method(:something_happened)
 session.get_property "pause"
 session.command "get_version"
 session.command "loadlist", "my_huge_playlist.txt", "append"
