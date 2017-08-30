@@ -122,7 +122,7 @@ module MPV
       response = JSON.parse(@socket.readline)
 
       if response["event"]
-        @event_queue << response["event"]
+        @event_queue << response
       else
         @result_queue << response
       end
