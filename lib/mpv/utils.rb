@@ -12,5 +12,10 @@ module MPV
         File.executable?(File.join(path, util))
       end
     end
+
+    def self.tmpname
+      t = Time.now.strftime("%Y%m%d")
+      "mpv#{t}-#{$$}-#{rand(0x100000000).to_s(36)}.sock"
+    end
   end
 end
