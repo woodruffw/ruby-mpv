@@ -52,7 +52,7 @@ module MPV
     #  (defaults to a tmpname in `/tmp`)
     # @param user_args [Array<String>] additional arguments to use when
     #  spawning mpv
-    def initialize(path: File.join('/tmp', Utils.tmpsock), user_args: [])
+    def initialize(path: File.join("/tmp", Utils.tmpsock), user_args: [])
       @socket_path = path
       @args = [
         "--idle",

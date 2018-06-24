@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "English"
+
 module MPV
   # Various utility methods for ruby-mpv.
   module Utils
@@ -15,7 +17,7 @@ module MPV
 
     def self.tmpsock
       t = Time.now.strftime("%Y%m%d")
-      "mpv#{t}-#{$$}-#{rand(0x100000000).to_s(36)}.sock"
+      "mpv#{t}-#{$PROCESS_ID}-#{rand(0x100000000).to_s(36)}.sock"
     end
   end
 end

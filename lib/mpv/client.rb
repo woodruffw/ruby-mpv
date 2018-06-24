@@ -2,7 +2,6 @@
 
 require "socket"
 require "json"
-require "thread"
 
 module MPV
   # Represents a connection to a mpv process that has been spawned
@@ -101,7 +100,7 @@ module MPV
       loop do
         begin
           @socket.puts(@command_queue.pop)
-        rescue # the player is deactivating
+        rescue StandardError # the player is deactivating
           @alive = false
           Thread.exit
         end
@@ -126,7 +125,7 @@ module MPV
       else
         @result_queue << response
       end
-    rescue
+    rescue StandardError
       @alive = false
       Thread.exit
     end
