@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "lib/mpv"
+require_relative "lib/mpv/version"
 
 Gem::Specification.new do |s|
   s.name                  = "mpv"
