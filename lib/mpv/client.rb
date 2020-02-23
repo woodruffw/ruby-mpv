@@ -33,6 +33,7 @@ module MPV
       @callbacks = []
       @replies = Queue.new
       @observers = {}
+      @messages = {}
       @event_loop = Thread.new { loop { run_event_loop } }
       @id = 0
     end
@@ -95,6 +96,27 @@ module MPV
       mpv.command("unobserve_property", id)
     end
 
+    # Registers a client-message handler
+    # @param message [String] the script-message identifier
+    # @yield [Array] called with the arguments passed to client-message
+    # @return [void]
+    # @example
+    #  client.register_message_handler("cool-message") do |a, b|
+    #    puts "hello #{a}-#{b}" # => hello, mikuru-chan
+    #  end
+    #
+    #  client.command("script-message", "cool-message", "mikuru", "chan")
+    def register_message_handler(message, &block)
+      @messages[message] = block
+    end
+
+    # Unregisters a client-message handler
+    # @param message [String] the client-message identifier
+    # @return [void]
+    def unregister_message_handler(message)
+      @messages.delete(message)
+    end
+
     private
 
     def next_id
@@ -122,6 +144,7 @@ module MPV
       if response["event"]
         event = Event.new(name: response["event"], raw: response)
         run_observer(event) if event.name == "property-change"
+        run_client_message(event) if event.name == "client-message"
         run_callbacks(event)
       else
         @replies.push(Reply.new(response))
@@ -146,6 +169,25 @@ module MPV
         data: event.raw["data"]
       )
       @observers.fetch(id).call(e)
+    end
+
+    KeyEvent = Struct.new(:section, :state, :key, :key2)
+
+    class KeyEvent
+      def keydown?
+        state == "d-"
+      end
+
+      def keyup?
+        state == "u-"
+      end
+    end
+
+    def run_client_message(event)
+      message, *args = event.raw.fetch("args")
+      message, *args = [args.first, KeyEvent.new(*args)] if message == "key-binding"
+
+      @messages.fetch(message, nil)&.call(*args)
     end
   end
 end

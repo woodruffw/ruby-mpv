@@ -38,4 +38,14 @@ describe MPV::Client do
     result = spy.wait(runs: 2)
     expect(result.map(&:first).map(&:data)).to eql([100.0, 10.0])
   end
+
+  it "can handle client-message" do
+    spy = ProcSpy.new
+    m = "cool-message"
+    @mpv.register_message_handler(m, &spy)
+    @mpv.command("script-message", m, "a", "b")
+    @mpv.command("script-message", m, "c", "d")
+    result = spy.wait(runs: 2)
+    expect(result).to eql([%w[a b], %w[c d]])
+  end
 end
