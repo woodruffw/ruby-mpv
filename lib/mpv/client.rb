@@ -11,18 +11,25 @@ module MPV
   # @see https://mpv.io/manual/master/#properties
   #  MPV's property docs
   class Client
-    # @return [String] the path of the socket used to communicate with mpv
-    attr_reader :socket_path
-
     # @return [Array<Proc>] callback procs that will be invoked
     #  whenever mpv emits an event
     attr_accessor :callbacks
 
-    # @param path [String] the domain socket for communication with mpv
-    def initialize(path)
-      @socket_path = path
+    # @param path [String] path to the unix socket
+    # @return Client
+    def self.from_unix_socket_path(path)
+      new(UNIXSocket.new(path))
+    end
 
-      @socket = UNIXSocket.new(@socket_path)
+    # @param file_descriptor [Integer] file descriptor id
+    # @return Client
+    def self.from_file_descriptor(file_descriptor)
+      new(Socket.for_fd(file_descriptor))
+    end
+
+    # @param socket [Socket] the socket for communication with mpv
+    def initialize(socket)
+      @socket = socket
       @alive = true
 
       @callbacks = []
@@ -89,7 +96,6 @@ module MPV
     ensure
       @alive = false
       @socket = nil
-      File.delete(@socket_path) if File.exist?(@socket_path)
     end
 
     private

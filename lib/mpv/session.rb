@@ -28,7 +28,7 @@ module MPV
 
       sleep 0.015 until File.exist?(@socket_path)
 
-      @client = Client.new(@socket_path)
+      @client = Client.from_unix_socket_path(@socket_path)
     end
 
     # @!method running?
