@@ -30,8 +30,6 @@ module MPV
     # @param socket [Socket] the socket for communication with mpv
     def initialize(socket)
       @socket = socket
-      @alive = true
-
       @callbacks = []
 
       @command_queue = Queue.new
@@ -41,12 +39,7 @@ module MPV
       @command_thread = Thread.new { pump_commands! }
       @results_thread = Thread.new { pump_results! }
       @events_thread = Thread.new { dispatch_events! }
-    end
 
-    # @return [Boolean] whether or not the player is currently active
-    # @note When false, most methods will cease to function.
-    def alive?
-      @alive
     end
 
     # Sends a command to the mpv process.
@@ -55,8 +48,6 @@ module MPV
     # @example
     #  client.command "loadfile", "mymovie.mp4", "append-play"
     def command(*args)
-      return unless alive?
-
       payload = {
         "command" => args,
       }
@@ -72,8 +63,6 @@ module MPV
     # @example
     #  client.set_property "pause", true
     def set_property(*args)
-      return unless alive?
-
       command "set_property", *args
     end
 
@@ -83,19 +72,8 @@ module MPV
     # @example
     #  client.get_property "pause" # => true
     def get_property(*args)
-      return unless alive?
 
       command("get_property", *args)["data"]
-    end
-
-    # Terminates the mpv process.
-    # @return [void]
-    # @note this object becomes garbage once this method is run
-    def quit!
-      command "quit" if alive?
-    ensure
-      @alive = false
-      @socket = nil
     end
 
     private
@@ -132,7 +110,6 @@ module MPV
         @result_queue << response
       end
     rescue StandardError
-      @alive = false
       Thread.exit
     end
 
