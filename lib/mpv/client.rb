@@ -150,6 +150,13 @@ module MPV
       unregister_message_handler(section)
     end
 
+    # Blocks the main thread until the mpv process exits
+    # @return [void]
+    def join
+      require "thwait"
+      ThreadsWait.new(@event_loop).join
+    end
+
     private
 
     def next_id
