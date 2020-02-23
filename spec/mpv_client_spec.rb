@@ -48,4 +48,16 @@ describe MPV::Client do
     result = spy.wait(runs: 2)
     expect(result).to eql([%w[a b], %w[c d]])
   end
+
+  it "can register a binding" do
+    spy = ProcSpy.new
+    section = @mpv.register_keybindings(%w[b c d], &spy)
+    @mpv.command("keypress", "g")
+    @mpv.command("keypress", "c")
+    expect(spy.wait.map(&:first).map(&:key)).to eql(%w[c])
+
+    @mpv.unregister_keybindings(section)
+    @mpv.command("keypress", "b")
+    expect(spy.wait(timeout: 0.5).size).to eql(0)
+  end
 end

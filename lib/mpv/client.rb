@@ -117,6 +117,39 @@ module MPV
       @messages.delete(message)
     end
 
+    # Registers a keybinding section
+    # @param keys [Array<String>] the keys to bind (in input.conf format)
+    # @param section [String] optional section name
+    # @param flags [String] either "default", or "force" (default: force)
+    # @yield [KeyEvent] the keybinding event
+    # @return [String] section name (for unregister_keybindings)
+    # @example
+    #  client.register_keybindings(%w[a b]) do |event|
+    #    event.keydown? # true
+    #    event.key "b"
+    #  end
+    #
+    #  client.command("keypress", "b")
+    def register_keybindings(keys, section: nil, flags: "default", &block)
+      section ||= ("a".."z").to_a.sample(8).join
+      namespaced_section = [client_name, section].join("/")
+      register_message_handler(section, &block)
+      contents = keys.map { |k| "#{k} script-binding #{namespaced_section}" }
+      command("define-section", section, contents.join("\n"), flags)
+      command("enable-section", section)
+      section
+    end
+
+    # Unregisters a keybinding section
+    # @param section [String] section name
+    # @param flags [String] either "default", or "force" (default: force)
+    # @return [void]
+    def unregister_keybindings(section)
+      command("disable-section", section)
+      command("define-section", section, "")
+      unregister_message_handler(section)
+    end
+
     private
 
     def next_id
@@ -181,6 +214,10 @@ module MPV
       def keyup?
         state == "u-"
       end
+    end
+
+    def client_name
+      @client_name ||= command("client_name").data
     end
 
     def run_client_message(event)
