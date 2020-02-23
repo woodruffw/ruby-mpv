@@ -30,4 +30,12 @@ describe MPV::Client do
     expect(result).to be_success
     expect(result.data).to eql(50.0)
   end
+
+  it "can observe properties" do
+    spy = ProcSpy.new
+    @mpv.observe_property(:volume, &spy)
+    @mpv.set_property(:volume, 10)
+    result = spy.wait(runs: 2)
+    expect(result.map(&:first).map(&:data)).to eql([100.0, 10.0])
+  end
 end

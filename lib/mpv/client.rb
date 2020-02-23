@@ -32,7 +32,9 @@ module MPV
       @socket = socket
       @callbacks = []
       @replies = Queue.new
+      @observers = {}
       @event_loop = Thread.new { loop { run_event_loop } }
+      @id = 0
     end
 
     # Sends a command to the mpv process.
@@ -70,10 +72,39 @@ module MPV
       command("get_property", property_name)
     end
 
+    # Observes property changes
+    # @param property [String] the property to observe
+    # @yield [ObserverEvent] event triggered by a property change
+    # @return [Integer] the observer id to use with unobserve_property
+    # @example
+    #  client.observe_property("volume") do |event|
+    #   puts "the new volume is #{event.data}"
+    #  end
+    def observe_property(property, &block)
+      id = next_id
+      @observers[id] = block
+      command("observe_property", id, property)
+      id
+    end
+
+    # Unobserves property changes
+    # @param id [Integer] the return value of #observe_property
+    # @return [Integer] the observer id to use with unobserve_property
+    # @return [void]
+    def unobserve_property(id)
+      mpv.command("unobserve_property", id)
+    end
+
     private
+
+    def next_id
+      @id += 1
+      @id
+    end
 
     Reply = Struct.new(:data, :error, :request_id, keyword_init: true)
     Event = Struct.new(:name, :raw, keyword_init: true)
+    ObserverEvent = Struct.new(:name, :data, :raw, keyword_init: true)
 
     # mpv command reply
     class Reply
@@ -90,6 +121,7 @@ module MPV
       response = JSON.parse(@socket.readline)
       if response["event"]
         event = Event.new(name: response["event"], raw: response)
+        run_observer(event) if event.name == "property-change"
         run_callbacks(event)
       else
         @replies.push(Reply.new(response))
@@ -104,6 +136,16 @@ module MPV
           callback.call(event)
         end
       end
+    end
+
+    def run_observer(event)
+      id = event.raw.dig("id")
+      e = ObserverEvent.new(
+        name: event.name,
+        raw: event.raw,
+        data: event.raw["data"]
+      )
+      @observers.fetch(id).call(e)
     end
   end
 end
