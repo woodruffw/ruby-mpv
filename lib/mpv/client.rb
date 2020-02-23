@@ -16,13 +16,13 @@ module MPV
     attr_accessor :callbacks
 
     # @param path [String] path to the unix socket
-    # @return Client
+    # @return [Client] an instance of this class
     def self.from_unix_socket_path(path)
       new(UNIXSocket.new(path))
     end
 
     # @param file_descriptor [Integer] file descriptor id
-    # @return Client
+    # @return [Client] an instance of this class
     def self.from_file_descriptor(file_descriptor)
       new(Socket.for_fd(file_descriptor))
     end
@@ -31,98 +31,77 @@ module MPV
     def initialize(socket)
       @socket = socket
       @callbacks = []
-
-      @command_queue = Queue.new
-      @result_queue = Queue.new
-      @event_queue = Queue.new
-
-      @command_thread = Thread.new { pump_commands! }
-      @results_thread = Thread.new { pump_results! }
-      @events_thread = Thread.new { dispatch_events! }
-
+      @replies = Queue.new
+      @event_loop = Thread.new { loop { run_event_loop } }
     end
 
     # Sends a command to the mpv process.
     # @param args [Array] the individual command arguments to send
-    # @return [Hash] mpv's response to the command
+    # @return [Reply] mpv's response
     # @example
     #  client.command "loadfile", "mymovie.mp4", "append-play"
     def command(*args)
-      payload = {
-        "command" => args,
-      }
-
-      @command_queue << JSON.generate(payload)
-
-      @result_queue.pop
+      payload = { "command" => args }
+      @socket.puts(JSON.generate(payload))
+      # this is kinda bad. in the future mpv might implement complete
+      # asynchronous operation instead of blocking on the socket. for that
+      # reason the code should be made more robust and send a request_id in
+      # order to handle out of order replies
+      @replies.pop
     end
 
     # Sends a property change to the mpv process.
-    # @param args [Array] the individual property arguments to send
-    # @return [Hash] mpv's response
+    # @param property_name [String] the property name (e.g.: volume)
+    # @param value [Object] the new property value
+    # @return [Reply] mpv's response
     # @example
     #  client.set_property "pause", true
-    def set_property(*args)
-      command "set_property", *args
+    def set_property(property_name, value)
+      command("set_property", property_name, value)
     end
 
     # Retrieves a property from the mpv process.
-    # @param args [Array] the individual property arguments to send
-    # @return [Object] the value of the property
+    # @param property_name [String] the property name (e.g.: volume)
+    # @return [Reply] mpv's response
     # @example
     #  client.get_property "pause" # => true
-    def get_property(*args)
-
-      command("get_property", *args)["data"]
+    #  client.get_property "volume" # => 100.0
+    def get_property(property_name)
+      command("get_property", property_name)
     end
 
     private
 
-    # Pumps commands from the command queue to the socket.
-    # @api private
-    def pump_commands!
-      loop do
-        begin
-          @socket.puts(@command_queue.pop)
-        rescue StandardError # the player is deactivating
-          @alive = false
-          Thread.exit
-        end
+    Reply = Struct.new(:data, :error, :request_id, keyword_init: true)
+    Event = Struct.new(:name, :raw, keyword_init: true)
+
+    # mpv command reply
+    class Reply
+      def success?
+        error == "success"
+      end
+
+      def error?
+        !success
       end
     end
 
-    # Distributes results in a nonterminating loop.
-    # @api private
-    def pump_results!
-      loop do
-        distribute_results!
-      end
-    end
-
-    # Distributes results to the event and result queues.
-    # @api private
-    def distribute_results!
+    def run_event_loop
       response = JSON.parse(@socket.readline)
-
       if response["event"]
-        @event_queue << response
+        event = Event.new(name: response["event"], raw: response)
+        run_callbacks(event)
       else
-        @result_queue << response
+        @replies.push(Reply.new(response))
       end
     rescue StandardError
       Thread.exit
     end
 
-    # Takes events from the event queue and dispatches them to callbacks.
-    # @api private
-    def dispatch_events!
-      loop do
-        event = @event_queue.pop
-
-        callbacks.each do |callback|
-          Thread.new do
-            callback.call event
-          end
+    def run_callbacks(event)
+      callbacks.each do |callback|
+        Thread.new do
+          callback.call(event)
         end
       end
     end
