@@ -1,0 +1,8 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require_relative "../lib/mpv"
+
+client = MPV::Client.script
+puts client.get_property(:volume).data
+client.command('quit')

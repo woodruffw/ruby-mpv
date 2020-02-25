@@ -60,4 +60,16 @@ describe MPV::Client do
     @mpv.command("keypress", "b")
     expect(spy.wait(timeout: 0.5).size).to eql(0)
   end
+
+  it "can connect through inherited file descriptor" do
+    script = File.expand_path("fd_test.run", __dir__)
+    command = [
+      "mpv",
+      "--no-config",
+      "--idle",
+      "--really-quiet",
+      "--script=#{script}",
+    ].join(" ")
+    expect(`#{command}`.strip).to eql("100.0")
+  end
 end

@@ -27,6 +27,18 @@ module MPV
       new(Socket.for_fd(file_descriptor))
     end
 
+    # @return [Client] an instance of this class using fd from --mpv-ipc-fd
+    def self.script
+      require "optparse"
+      parser = OptionParser.new do |opts|
+        opts.on("--mpv-ipc-fd=N", Integer) do |value|
+          return from_file_descriptor(value)
+        end
+      end
+      parser.parse!
+      raise ArgumentError, "--mpv-ipc-fd argument not provided"
+    end
+
     # @param socket [Socket] the socket for communication with mpv
     def initialize(socket)
       @socket = socket
