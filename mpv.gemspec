@@ -13,6 +13,7 @@ Gem::Specification.new do |s|
   s.required_ruby_version = ">= 2.3.0"
   s.homepage              = "https://github.com/woodruffw/ruby-mpv"
   s.license               = "MIT"
+  s.add_dependency "concurrent-ruby", "~> 1.1.6"
   s.add_development_dependency "awesome_print"
   s.add_development_dependency "bundler", "~> 1.17"
   s.add_development_dependency "rake", "~> 10.0"

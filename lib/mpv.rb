@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "concurrent"
 require_relative "mpv/version"
 
 module MPV

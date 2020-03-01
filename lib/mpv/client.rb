@@ -48,8 +48,8 @@ module MPV
       ]
       @replies = MultiQueue.new
       @id = AtomicInt64.new
-      @observers = {}
-      @messages = {}
+      @observers = Concurrent::Hash.new
+      @messages = Concurrent::Hash.new
       @event_loop = Thread.new { loop { run_event_loop } }
     end
 
