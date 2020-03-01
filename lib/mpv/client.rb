@@ -152,8 +152,8 @@ module MPV
     # @return [String] section name (for unregister_keybindings)
     # @example
     #  client.register_keybindings(%w[a b]) do |event|
-    #    event.keydown? # true
-    #    event.key "b"
+    #    event.keydown? # => true
+    #    event.key # => "b"
     #  end
     #
     #  client.command("keypress", "b")
