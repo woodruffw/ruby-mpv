@@ -104,4 +104,22 @@ describe MPV::Client do
     sleep(0.3)
     expect(@mpv.osd_messages.size).to eql(0)
   end
+
+  it "handles modal keypresses" do
+    spy = ProcSpy.new
+    @mpv.enter_modal_mode("really delete?", %w[y n], &spy)
+    expect(@mpv.osd_messages.size).to eql(1)
+    @mpv.command("keypress", "y")
+    expect(spy.wait.map(&:first).map(&:key)).to eql(["y"])
+    expect(@mpv.osd_messages.size).to eql(0)
+  end
+
+  it "handles modal exit key" do
+    spy = ProcSpy.new
+    @mpv.enter_modal_mode("really delete?", %w[y n], &spy)
+    expect(@mpv.osd_messages.size).to eql(1)
+    @mpv.command("keypress", "ESC")
+    expect(spy.wait(timeout: 0.5).map(&:first).map(&:key)).to eql([])
+    expect(@mpv.osd_messages.size).to eql(0)
+  end
 end

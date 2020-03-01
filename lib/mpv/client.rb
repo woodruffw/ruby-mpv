@@ -232,6 +232,30 @@ module MPV
       render_osd_messages
     end
 
+    # Enters a modal mode, similar to Vim's modes. The only difference is the
+    # mode is quit after a single keypress, or if the exit key is pressed.
+    # @param message [String] Message to show while the modal mode is active
+    # @param keys [Array<String>] the keys to bind (in input.conf format)
+    # @param exit_key [String] the key to exit modal mode (in input.conf format)
+    # @yield [KeyEvent] the keybinding event
+    # @return [String] section name (for unregister_keybindings)
+    # @example
+    #  client.register_keybindings(%w[d]) do
+    #    client.enter_modal_mode("really delete?", %w[y n]) do |event|
+    #      event.keydown? # => true
+    #      event.key # => "y"
+    #    end
+    #  end
+    def enter_modal_mode(message, keys, exit_key: "ESC", &block)
+      osd_id = create_osd_message(message)
+      register_keybindings(keys + [exit_key], flags: :force) do |event|
+        delete_osd_message(osd_id)
+        unregister_keybindings(event.section)
+
+        block.call(event) if block_given? && event.key != exit_key
+      end
+    end
+
     private
 
     Reply = Struct.new(:data, :error, :request_id, keyword_init: true)
