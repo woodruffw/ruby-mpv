@@ -47,10 +47,25 @@ module MPV
         method(:client_message_callback),
       ]
       @replies = MultiQueue.new
-      @id = AtomicInt64.new
+      @id = Concurrent::AtomicFixnum.new
       @observers = Concurrent::Hash.new
       @messages = Concurrent::Hash.new
       @event_loop = Thread.new { loop { run_event_loop } }
+    end
+
+    # Don't use 0, mpv observers don't work otherwise, it's treatead as nil
+    MIN_ID = 1
+
+    # The virtual machines's maximum Fixnum. Equals to 2^62 on cruby compiled
+    # on a 64bit machine, 2^64 at most on better VMs like jruby. mpv goes up
+    # to 2^64 so this is a safe value to make the atomic counter roll-over
+    MAX_ID = (2**(0.size * 8 - 2) - 1)
+
+    def next_id
+      @id.update do |current|
+        new = current + 1
+        new >= MAX_ID ? MIN_ID : new
+      end
     end
 
     # Sends a command to the mpv process.
@@ -59,7 +74,7 @@ module MPV
     # @example
     #  client.command "loadfile", "mymovie.mp4", "append-play"
     def command(*args)
-      request_id = @id.incr
+      request_id = next_id
       payload = { "command" => args, "request_id" => request_id }
       @socket.puts(JSON.generate(payload))
       @replies.pop(request_id)
@@ -94,7 +109,7 @@ module MPV
     #   puts "the new volume is #{event.data}"
     #  end
     def observe_property(property, &block)
-      observer_id = @id.incr
+      observer_id = next_id
       @observers[observer_id] = block
       command("observe_property", observer_id, property)
       observer_id
