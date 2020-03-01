@@ -42,8 +42,11 @@ module MPV
     # @param socket [Socket] the socket for communication with mpv
     def initialize(socket)
       @socket = socket
-      @callbacks = []
       @replies = Queue.new
+      @callbacks = [
+        method(:observer_callback),
+        method(:client_message_callback),
+      ]
       @observers = {}
       @messages = {}
       @event_loop = Thread.new { loop { run_event_loop } }
@@ -195,8 +198,6 @@ module MPV
       response = JSON.parse(@socket.readline)
       if response["event"]
         event = Event.new(name: response["event"], raw: response)
-        run_observer(event) if event.name == "property-change"
-        run_client_message(event) if event.name == "client-message"
         run_callbacks(event)
       else
         @replies.push(Reply.new(response))
@@ -213,7 +214,9 @@ module MPV
       end
     end
 
-    def run_observer(event)
+    def observer_callback(event)
+      return unless event.name == "property-change"
+
       id = event.raw.dig("id")
       e = ObserverEvent.new(
         name: event.name,
@@ -239,7 +242,9 @@ module MPV
       @client_name ||= command("client_name").data
     end
 
-    def run_client_message(event)
+    def client_message_callback(event)
+      return unless event.name == "client-message"
+
       message, *args = event.raw.fetch("args")
       message, *args = [args.first, KeyEvent.new(*args)] if message == "key-binding"
 

@@ -72,4 +72,15 @@ describe MPV::Client do
     ].join(" ")
     expect(`#{command}`.strip).to eql("100.0")
   end
+
+  it "doesn't deadlock" do
+    spy = ProcSpy.new
+    section = @mpv.register_keybindings(%w[b]) do
+      volume = @mpv.get_property("volume").data
+      spy.to_proc.call(volume)
+    end
+    @mpv.command("keypress", "b")
+    expect(spy.wait).to eql([[100.0]])
+    @mpv.unregister_keybindings(section)
+  end
 end
