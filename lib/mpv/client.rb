@@ -15,6 +15,9 @@ module MPV
     #  whenever mpv emits an event
     attr_accessor :callbacks
 
+    # @return [Hash<Integer, Ass::Text>] osd messages
+    attr_reader :osd_messages
+
     # @param path [String] path to the unix socket
     # @return [Client] an instance of this class
     def self.from_unix_socket_path(path)
@@ -50,6 +53,7 @@ module MPV
       @id = Concurrent::AtomicFixnum.new
       @observers = Concurrent::Hash.new
       @messages = Concurrent::Hash.new
+      @osd_messages = Concurrent::Hash.new
       @event_loop = Thread.new { loop { run_event_loop } }
     end
 
@@ -184,6 +188,50 @@ module MPV
       ThreadsWait.new(@event_loop).join
     end
 
+    # Creates a new message and adds it to the OSD
+    # @param text [String] message
+    # @param timeout [Float] timeout in seconds to autoremove the message
+    # @return [Integer] message id
+    def create_osd_message(text, timeout: nil)
+      overlay = Ass::Text.new(text)
+
+      id = next_id
+      @osd_messages[id] = overlay
+
+      if timeout.to_f.positive?
+        Concurrent::ScheduledTask.execute(timeout) do
+          delete_osd_message(id)
+        end
+      end
+
+      render_osd_messages
+
+      id
+    end
+
+    # Edits one of the messages on the OSD
+    # @param id [Integer] message id
+    # @return [void]
+    def edit_osd_message(id, text)
+      @osd_messages[id] = Ass::Text.new(text)
+      render_osd_messages
+    end
+
+    # Deletes one of the messages on the OSD
+    # @param id [Integer] message id
+    # @return [void]
+    def delete_osd_message(id)
+      @osd_messages.delete(id)
+      render_osd_messages
+    end
+
+    # Deletes all the messages on the OSD
+    # @return [void]
+    def clear_osd_messages
+      @osd_messages.clear
+      render_osd_messages
+    end
+
     private
 
     Reply = Struct.new(:data, :error, :request_id, keyword_init: true)
@@ -257,6 +305,15 @@ module MPV
       message, *args = [args.first, KeyEvent.new(*args)] if message == "key-binding"
 
       @messages.fetch(message, nil)&.call(*args)
+    end
+
+    def render_osd_messages
+      if @osd_messages.size.positive?
+        script = @osd_messages.values.map(&:to_script).join('\\N')
+        command("osd-overlay", 999, "ass-events", script)
+      else
+        command("osd-overlay", 999, "none", "")
+      end
     end
   end
 end

@@ -83,4 +83,25 @@ describe MPV::Client do
     expect(spy.wait).to eql([[100.0]])
     @mpv.unregister_keybindings(section)
   end
+
+  it "handles messages correctly" do
+    id1 = @mpv.create_osd_message("foo")
+    id2 = @mpv.create_osd_message("bar")
+    id3 = @mpv.create_osd_message("baz")
+    expect(@mpv.osd_messages.values.map(&:text)).to eql(%w[foo bar baz])
+    @mpv.edit_osd_message(id2, "pasta")
+    expect(@mpv.osd_messages.values.map(&:text)).to eql(%w[foo pasta baz])
+    @mpv.delete_osd_message(id1)
+    @mpv.delete_osd_message(id3)
+    expect(@mpv.osd_messages.values.map(&:text)).to eql(%w[pasta])
+    @mpv.clear_osd_messages
+    expect(@mpv.osd_messages.size).to eql(0)
+  end
+
+  it "handles messages with a timeout" do
+    @mpv.create_osd_message("foo", timeout: 0.2)
+    expect(@mpv.osd_messages.values.map(&:text)).to eql(%w[foo])
+    sleep(0.3)
+    expect(@mpv.osd_messages.size).to eql(0)
+  end
 end
