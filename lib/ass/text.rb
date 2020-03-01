@@ -3,9 +3,16 @@
 module Ass
   # Represents a SubStationAlpha styled String
   class Text
+    attr_reader :text
+
     def initialize(text)
       @text = text
-      @style = {}
+      @style = {
+        fs: 40,
+        bord: 1,
+        "3c": Ass::Color.black.to_script,
+        "1c": Ass::Color.white.to_script,
+      }
     end
 
     # @param size [Integer]
