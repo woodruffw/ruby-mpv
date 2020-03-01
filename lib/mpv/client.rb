@@ -42,15 +42,15 @@ module MPV
     # @param socket [Socket] the socket for communication with mpv
     def initialize(socket)
       @socket = socket
-      @replies = Queue.new
       @callbacks = [
         method(:observer_callback),
         method(:client_message_callback),
       ]
+      @replies = MultiQueue.new
+      @id = AtomicInt64.new
       @observers = {}
       @messages = {}
       @event_loop = Thread.new { loop { run_event_loop } }
-      @id = 0
     end
 
     # Sends a command to the mpv process.
@@ -59,13 +59,10 @@ module MPV
     # @example
     #  client.command "loadfile", "mymovie.mp4", "append-play"
     def command(*args)
-      payload = { "command" => args }
+      request_id = @id.incr
+      payload = { "command" => args, "request_id" => request_id }
       @socket.puts(JSON.generate(payload))
-      # this is kinda bad. in the future mpv might implement complete
-      # asynchronous operation instead of blocking on the socket. for that
-      # reason the code should be made more robust and send a request_id in
-      # order to handle out of order replies
-      @replies.pop
+      @replies.pop(request_id)
     end
 
     # Sends a property change to the mpv process.
@@ -97,18 +94,18 @@ module MPV
     #   puts "the new volume is #{event.data}"
     #  end
     def observe_property(property, &block)
-      id = next_id
-      @observers[id] = block
-      command("observe_property", id, property)
-      id
+      observer_id = @id.incr
+      @observers[observer_id] = block
+      command("observe_property", observer_id, property)
+      observer_id
     end
 
     # Unobserves property changes
-    # @param id [Integer] the return value of #observe_property
+    # @param observer_id [Integer] the return value of #observe_property
     # @return [Integer] the observer id to use with unobserve_property
     # @return [void]
-    def unobserve_property(id)
-      mpv.command("unobserve_property", id)
+    def unobserve_property(observer_id)
+      mpv.command("unobserve_property", observer_id)
     end
 
     # Registers a client-message handler
@@ -174,11 +171,6 @@ module MPV
 
     private
 
-    def next_id
-      @id += 1
-      @id
-    end
-
     Reply = Struct.new(:data, :error, :request_id, keyword_init: true)
     Event = Struct.new(:name, :raw, keyword_init: true)
     ObserverEvent = Struct.new(:name, :data, :raw, keyword_init: true)
@@ -200,7 +192,8 @@ module MPV
         event = Event.new(name: response["event"], raw: response)
         run_callbacks(event)
       else
-        @replies.push(Reply.new(response))
+        reply = Reply.new(response)
+        @replies.push(reply.request_id, reply)
       end
     rescue StandardError
       Thread.exit
