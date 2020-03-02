@@ -32,7 +32,7 @@ describe MPV::Client do
   end
 
   it "can observe properties" do
-    spy = ProcSpy.new
+    spy = MPV::ProcSpy.new
     @mpv.observe_property(:volume, &spy)
     @mpv.set_property(:volume, 10)
     result = spy.wait(runs: 2)
@@ -40,7 +40,7 @@ describe MPV::Client do
   end
 
   it "can handle client-message" do
-    spy = ProcSpy.new
+    spy = MPV::ProcSpy.new
     m = "cool-message"
     @mpv.register_message_handler(m, &spy)
     @mpv.command("script-message", m, "a", "b")
@@ -50,7 +50,7 @@ describe MPV::Client do
   end
 
   it "can register a binding" do
-    spy = ProcSpy.new
+    spy = MPV::ProcSpy.new
     section = @mpv.register_keybindings(%w[b c d], &spy)
     @mpv.command("keypress", "g")
     @mpv.command("keypress", "c")
@@ -74,7 +74,7 @@ describe MPV::Client do
   end
 
   it "doesn't deadlock" do
-    spy = ProcSpy.new
+    spy = MPV::ProcSpy.new
     section = @mpv.register_keybindings(%w[b]) do
       volume = @mpv.get_property("volume").data
       spy.to_proc.call(volume)
@@ -106,7 +106,7 @@ describe MPV::Client do
   end
 
   it "handles modal keypresses" do
-    spy = ProcSpy.new
+    spy = MPV::ProcSpy.new
     @mpv.enter_modal_mode("really delete?", %w[y n], &spy)
     expect(@mpv.osd_messages.size).to eql(1)
     @mpv.command("keypress", "y")
@@ -115,7 +115,7 @@ describe MPV::Client do
   end
 
   it "handles modal exit key" do
-    spy = ProcSpy.new
+    spy = MPV::ProcSpy.new
     @mpv.enter_modal_mode("really delete?", %w[y n], &spy)
     expect(@mpv.osd_messages.size).to eql(1)
     @mpv.command("keypress", "ESC")
