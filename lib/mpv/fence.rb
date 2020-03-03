@@ -4,7 +4,7 @@ module MPV
   # Utility class to test threaded asyncronous code that calls blocks/procs.
   # Exposed as production code for the sake of the users who want to TDD their
   # mpv Ruby scripts (since it's not trivial code to write).
-  class ProcSpy
+  class Fence
     def initialize
       @mutex = Mutex.new
       @resource = ConditionVariable.new

@@ -32,33 +32,33 @@ describe MPV::Client do
   end
 
   it "can observe properties" do
-    spy = MPV::ProcSpy.new
-    @mpv.observe_property(:volume, &spy)
+    fence = MPV::Fence.new
+    @mpv.observe_property(:volume, &fence)
     @mpv.set_property(:volume, 10)
-    result = spy.wait(runs: 2)
+    result = fence.wait(runs: 2)
     expect(result.map(&:first).map(&:data)).to eql([100.0, 10.0])
   end
 
   it "can handle client-message" do
-    spy = MPV::ProcSpy.new
+    fence = MPV::Fence.new
     m = "cool-message"
-    @mpv.register_message_handler(m, &spy)
+    @mpv.register_message_handler(m, &fence)
     @mpv.command("script-message", m, "a", "b")
     @mpv.command("script-message", m, "c", "d")
-    result = spy.wait(runs: 2)
+    result = fence.wait(runs: 2)
     expect(result).to eql([%w[a b], %w[c d]])
   end
 
   it "can register a binding" do
-    spy = MPV::ProcSpy.new
-    section = @mpv.register_keybindings(%w[b c d], &spy)
+    fence = MPV::Fence.new
+    section = @mpv.register_keybindings(%w[b c d], &fence)
     @mpv.command("keypress", "g")
     @mpv.command("keypress", "c")
-    expect(spy.wait.map(&:first).map(&:key)).to eql(%w[c])
+    expect(fence.wait.map(&:first).map(&:key)).to eql(%w[c])
 
     @mpv.unregister_keybindings(section)
     @mpv.command("keypress", "b")
-    expect(spy.wait(timeout: 0.5).size).to eql(0)
+    expect(fence.wait(timeout: 0.5).size).to eql(0)
   end
 
   it "can connect through inherited file descriptor" do
@@ -74,13 +74,13 @@ describe MPV::Client do
   end
 
   it "doesn't deadlock" do
-    spy = MPV::ProcSpy.new
+    fence = MPV::Fence.new
     section = @mpv.register_keybindings(%w[b]) do
       volume = @mpv.get_property("volume").data
-      spy.to_proc.call(volume)
+      fence.to_proc.call(volume)
     end
     @mpv.command("keypress", "b")
-    expect(spy.wait).to eql([[100.0]])
+    expect(fence.wait).to eql([[100.0]])
     @mpv.unregister_keybindings(section)
   end
 
@@ -106,20 +106,20 @@ describe MPV::Client do
   end
 
   it "handles modal keypresses" do
-    spy = MPV::ProcSpy.new
-    @mpv.enter_modal_mode("really delete?", %w[y n], &spy)
+    fence = MPV::Fence.new
+    @mpv.enter_modal_mode("really delete?", %w[y n], &fence)
     expect(@mpv.osd_messages.size).to eql(1)
     @mpv.command("keypress", "y")
-    expect(spy.wait.map(&:first).map(&:key)).to eql(["y"])
+    expect(fence.wait.map(&:first).map(&:key)).to eql(["y"])
     expect(@mpv.osd_messages.size).to eql(0)
   end
 
   it "handles modal exit key" do
-    spy = MPV::ProcSpy.new
-    @mpv.enter_modal_mode("really delete?", %w[y n], &spy)
+    fence = MPV::Fence.new
+    @mpv.enter_modal_mode("really delete?", %w[y n], &fence)
     expect(@mpv.osd_messages.size).to eql(1)
     @mpv.command("keypress", "ESC")
-    expect(spy.wait(timeout: 0.5).map(&:first).map(&:key)).to eql([])
+    expect(fence.wait(timeout: 0.5).map(&:first).map(&:key)).to eql([])
     expect(@mpv.osd_messages.size).to eql(0)
   end
 end
