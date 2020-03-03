@@ -41,6 +41,10 @@ module MPV
       end
     end
 
+    def wait1(timeout: DEFAULT_TIMEOUT)
+      wait(runs: 1, timeout: timeout).first
+    end
+
     # Clears the calls history
     def clear!
       @mutex.synchronize do
