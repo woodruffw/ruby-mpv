@@ -45,6 +45,15 @@ module MPV
       wait(runs: 1, timeout: timeout).first
     end
 
+    def wait_until(timeout: DEFAULT_TIMEOUT, &block)
+      start = Concurrent.monotonic_time
+      loop do
+        x = wait1(timeout: timeout / 10).first
+        break if block.call(x)
+        break if (Concurrent.monotonic_time - start) >= timeout
+      end
+    end
+
     # Clears the calls history
     def clear!
       @mutex.synchronize do
