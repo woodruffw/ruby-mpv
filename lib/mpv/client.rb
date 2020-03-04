@@ -310,7 +310,7 @@ module MPV
 
     class KeyEvent
       def keydown?
-        state == "d-"
+        state == "d-" || state == "p-"
       end
 
       def keyup?
