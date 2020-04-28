@@ -94,14 +94,34 @@ module MPV
       command("set_property", property_name, value)
     end
 
+    # Sends a property change to the mpv process.
+    # @param property_name [String] the property name (e.g.: volume)
+    # @param value [Object] the new property value
+    # @example
+    #  client.set_property "pause", true
+    def set_property!(property_name, value)
+      set_property(property_name, value).data!
+    end
+
     # Retrieves a property from the mpv process.
     # @param property_name [String] the property name (e.g.: volume)
     # @return [Reply] mpv's response
     # @example
-    #  client.get_property "pause" # => true
-    #  client.get_property "volume" # => 100.0
+    #  client.get_property("pause").data # => true
+    #  client.get_property("volume").data # => 100.0
     def get_property(property_name)
       command("get_property", property_name)
+    end
+
+    # Retrieves a property from the mpv process.
+    # @param property_name [String] the property name (e.g.: volume)
+    # @return [Object] mpv's response
+    # @example
+    #  client.get_property "pause" # => true
+    #  client.get_property "volume" # => 100.0
+    #  client.get_property "asdv" # => raises MPVPropertyError
+    def get_property!(property_name)
+      get_property(property_name).data!
     end
 
     # Observes property changes
@@ -269,7 +289,13 @@ module MPV
       end
 
       def error?
-        !success
+        !success?
+      end
+
+      def data!
+        raise MPVReplyError, error if error?
+
+        data
       end
     end
 

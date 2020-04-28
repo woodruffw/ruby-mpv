@@ -31,6 +31,20 @@ describe MPV::Client do
     expect(result.data).to eql(50.0)
   end
 
+  it "can set properties unsafely" do
+    result = @mpv.get_property!("volume")
+    expect(result).to eql(100.0)
+
+    result = @mpv.set_property!("volume", 50)
+    expect(result).to eql(nil)
+
+    result = @mpv.get_property!("volume")
+    expect(result).to eql(50.0)
+
+    expect { @mpv.get_property!("asdf") }.to raise_error(MPV::MPVReplyError)
+    expect { @mpv.set_property!("asdf", 1) }.to raise_error(MPV::MPVReplyError)
+  end
+
   it "can observe properties" do
     fence = MPV::Fence.new
     @mpv.observe_property(:volume, &fence)

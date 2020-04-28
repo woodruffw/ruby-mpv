@@ -5,6 +5,10 @@ module MPV
   class MPVError < RuntimeError
   end
 
+  # Error accessing a reply
+  class MPVReplyError < RuntimeError
+  end
+
   # Raised when `mpv` cannot be executed.
   class MPVNotAvailableError < MPVError
     def initialize
