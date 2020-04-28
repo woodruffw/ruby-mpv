@@ -117,6 +117,13 @@ describe MPV::Client do
     expect(@mpv.osd_messages.values.map(&:text)).to eql(%w[foo])
     sleep(0.3)
     expect(@mpv.osd_messages.size).to eql(0)
+
+    id = @mpv.create_osd_message("bar")
+    expect(@mpv.osd_messages.values.map(&:text)).to eql(%w[bar])
+    @mpv.edit_osd_message(id, "baz", timeout: 0.2)
+    expect(@mpv.osd_messages.values.map(&:text)).to eql(%w[baz])
+    sleep(0.3)
+    expect(@mpv.osd_messages.size).to eql(0)
   end
 
   it "handles modal keypresses" do

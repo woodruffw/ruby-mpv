@@ -218,12 +218,7 @@ module MPV
       id = next_id
       @osd_messages[id] = overlay
 
-      if timeout.to_f.positive?
-        Concurrent::ScheduledTask.execute(timeout) do
-          delete_osd_message(id)
-        end
-      end
-
+      delete_osd_message(id, delay: timeout) if timeout.to_f.positive?
       render_osd_messages
 
       id
@@ -231,18 +226,28 @@ module MPV
 
     # Edits one of the messages on the OSD
     # @param id [Integer] message id
+    # @param timeout [Float] timeout in seconds to autoremove the message
     # @return [void]
-    def edit_osd_message(id, text)
+    def edit_osd_message(id, text, timeout: nil)
       @osd_messages[id] = Ass::Text.new(text)
+      delete_osd_message(id, delay: timeout) if timeout.to_f.positive?
       render_osd_messages
     end
 
     # Deletes one of the messages on the OSD
     # @param id [Integer] message id
+    # @param delay [Float] delay in seconds to wait for deletion
     # @return [void]
-    def delete_osd_message(id)
-      @osd_messages.delete(id)
-      render_osd_messages
+    def delete_osd_message(id, delay: nil)
+      if delay.nil?
+        @osd_messages.delete(id)
+        render_osd_messages
+      else
+        Concurrent::ScheduledTask.execute(delay) do
+          @osd_messages.delete(id)
+          render_osd_messages
+        end
+      end
     end
 
     # Deletes all the messages on the OSD
