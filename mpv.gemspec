@@ -15,7 +15,7 @@ Gem::Specification.new do |s|
   s.license               = "MIT"
   s.add_dependency "concurrent-ruby", "~> 1.1.6"
   s.add_development_dependency "awesome_print"
-  s.add_development_dependency "bundler", "~> 1.17"
+  s.add_development_dependency "bundler"
   s.add_development_dependency "rake", "~> 10.0"
   s.add_development_dependency "redcarpet"
   s.add_development_dependency "rspec", "~> 3.0"
