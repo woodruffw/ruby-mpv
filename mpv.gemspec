@@ -14,6 +14,7 @@ Gem::Specification.new do |s|
   s.homepage              = "https://github.com/woodruffw/ruby-mpv"
   s.license               = "MIT"
   s.add_dependency "concurrent-ruby", "~> 1.1.6"
+  s.add_dependency "e2mmap"
   s.add_dependency "thwait"
   s.add_development_dependency "awesome_print"
   s.add_development_dependency "bundler"

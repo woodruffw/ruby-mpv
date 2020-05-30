@@ -3,6 +3,7 @@ PATH
   specs:
     mpv (3.0.1)
       concurrent-ruby (~> 1.1.6)
+      e2mmap
       thwait
 
 GEM
@@ -12,6 +13,7 @@ GEM
     awesome_print (1.8.0)
     concurrent-ruby (1.1.6)
     diff-lcs (1.3)
+    e2mmap (0.1.0)
     jaro_winkler (1.5.4)
     parallel (1.19.1)
     parser (2.7.1.3)
